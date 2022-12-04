@@ -10,6 +10,7 @@ from ask_sdk_core.utils import is_request_type, is_intent_name
 from ask_sdk_core.handler_input import HandlerInput
 from ask_sdk_model import Response
 from ask_sdk_model.ui import SimpleCard
+from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 
 #入力されたリクエスト処置とカスタム応答の生成
 sb = SkillBuilder()
@@ -71,4 +72,33 @@ class CancelAndStopIntentHandler(AbstractRequestHandler):
 
         handler_input.response_builder.speak(speech_text).set_card(
             SimpleCard("ハローワールド", speech_text)).set_should_end_session(True)
+        return handler_input.response_builder.response
+
+#セッションが終了したことの通知
+#ユーザが終了と言った時、ユーザが応答しない時、音声インタフェースに定義されているインテントと一致しない言葉を発した時、エラーが発声した時
+class SessionEndedRequestHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return is_request_type("SessionEndedRequest")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        # クリーンアップロジックをここに追加します
+
+        return handler_input.response_builder.response
+
+#例外ハンドラ
+class AllExceptionHandler(AbstractExceptionHandler):
+
+    def can_handle(self, handler_input, exception):
+        # type: (HandlerInput, Exception) -> bool
+        return True
+
+    def handle(self, handler_input, exception):
+        # type: (HandlerInput, Exception) -> Response
+        # Cloudwatchログに例外を記録します
+        print(exception)
+
+        speech = "すみません、わかりませんでした。もう一度言ってください。"
+        handler_input.response_builder.speak(speech).ask(speech)
         return handler_input.response_builder.response
